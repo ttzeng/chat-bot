@@ -1,10 +1,12 @@
 import os
 from types import SimpleNamespace
 
-from flask import Flask, request, abort
+from flask import Flask, request, abort, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+
+from chat_bot import chat_bot
 
 s = SimpleNamespace()
 try:
@@ -21,6 +23,7 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(s.LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(s.LINE_CHANNEL_SECRET)
 
+@app.route('/echo', methods=['GET', 'POST'])
 def echo(request):
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
@@ -41,3 +44,15 @@ def handle_message(event):
     line_bot_api.reply_message(
         event.reply_token,
         message)
+
+@app.route('/chat', methods=['POST'])
+def chat(request):
+    return jsonify({ 'fulfillmentText': chat_bot(request.get_json()) })
+
+if __name__ == '__main__':
+    port = os.environ.get('SERVER_PORT')
+    if port == None:
+        port = 80
+    else:
+        port = int(port)
+    app.run(host='0.0.0.0', port=port)
