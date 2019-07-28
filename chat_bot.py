@@ -110,7 +110,9 @@ def weather_elements2nl(elements):
     if 'Wx' in elements:
         desc += '，天氣%s' % elements['Wx']
     if 'PoP12h' in elements:
-        desc += '，降雨機率%s' % elements['PoP12h'] + '%'
+        pop = elements['PoP12h']
+        if pop.isdigit() and pop != '0':
+            desc += '，降雨機率{}%'.format(pop)
     if 'MaxT' in elements:
         if 'MinT' in elements:
             desc += '，氣溫%s~%s°' % (elements['MinT'], elements['MaxT'])
