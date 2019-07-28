@@ -24,6 +24,9 @@ line_bot_api = LineBotApi(s.LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(s.LINE_CHANNEL_SECRET)
 
 @app.route('/echo', methods=['GET', 'POST'])
+def _echo():
+    return echo(request)
+
 def echo(request):
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
@@ -46,6 +49,9 @@ def handle_message(event):
         message)
 
 @app.route('/chat', methods=['POST'])
+def _chat():
+    return chat(request)
+
 def chat(request):
     return jsonify({ 'fulfillmentText': chat_bot(request.get_json()) })
 
