@@ -77,11 +77,11 @@ def ptime2nl(str):
         days = t.day - now.day
 
         if days == 0:
-            nl_day = '今天'
+            nl_day = '今({})日'.format(t.day)
         elif days == 1:
-            nl_day = '明天'
+            nl_day = '明({})日'.format(t.day)
         elif days == 2:
-            nl_day = '後天'
+            nl_day = '後天({}日)'.format(t.day)
         else:
             weekday = [ '週一', '週二', '週三', '週四', '週五', '週六', '週日' ]
             month = ''
