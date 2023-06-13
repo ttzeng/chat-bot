@@ -1,2 +1,4 @@
 # Function dependencies
 line-bot-sdk
+python-dotenv
+pytz

@@ -1,11 +1,11 @@
+import os
 from datetime import datetime
 import pytz
 import requests
 
-import secrets as s
 # 中央氣象局開放資料平臺 https://opendata.cwb.gov.tw
 # 資料擷取使用說明 https://opendata.cwb.gov.tw/opendatadoc/CWB_Opendata_API_V1.2.pdf
-opendata_access_token  = { 'Authorization': s.CWB_AUTHORIZATION_KEY }
+opendata_access_token  = { 'Authorization': os.environ.get('CWB_AUTHORIZATION_KEY') }
 
 def chat_bot(json):
     # parameters from Dialogflow
