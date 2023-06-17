@@ -1,4 +1,5 @@
 # Function dependencies
 line-bot-sdk
+openai
 python-dotenv
 pytz

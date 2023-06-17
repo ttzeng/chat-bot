@@ -7,29 +7,48 @@ import requests
 # 資料擷取使用說明 https://opendata.cwb.gov.tw/opendatadoc/CWB_Opendata_API_V1.2.pdf
 opendata_access_token  = { 'Authorization': os.environ.get('CWB_AUTHORIZATION_KEY') }
 
-def chat_bot(json):
-    # parameters from Dialogflow
-    params = json['queryResult']['parameters']
-    weather    = params['getWeather']
-    date       = params['date']
-    timeperiod = params['time-period']
-    location   = params['getLocation']
+import openai
+openai.api_key = os.environ.get('OPENAI_API_KEY')
 
-    # parameters 'date', 'timeperiod' received from Diaglogflow are in ISO 8601 format
-    if timeperiod != '':
-        startTime = datetime.strptime(timeperiod['startTime'], '%Y-%m-%dT%H:%M:%S%z')
-        endTime   = datetime.strptime(timeperiod['endTime']  , '%Y-%m-%dT%H:%M:%S%z')
+def chat_bot(json):
+    print(json)
+    if 'action' in json['queryResult']:
+        action = json['queryResult']['action']
     else:
-        # from specific date to the end of that day if no time period is specified
-        if date != '':
-            startTime = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S%z')
-        else:
-            startTime = datetime.now(pytz.timezone('Asia/Taipei'))
-        endTime = startTime.replace(hour=23, minute=59, second=59)
+        action = None
 
     reply = None
-    if weather in ['weather', 'temperature']:
-        reply = query_weather(location, startTime, endTime, weather)
+    if action == 'input.unknown':
+        # Relay the query text to chatGPT
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages= [ { "role":"user", "content": json['queryResult']['queryText'] } ],
+            max_tokens=128,
+            temperature=0.5,
+        )
+        reply = response.choices[0].message.content
+    elif action == 'query.weather':
+        # parameters from Dialogflow
+        params = json['queryResult']['parameters']
+        weather    = params['getWeather']
+        date       = params['date']
+        timeperiod = params['time-period']
+        location   = params['getLocation']
+
+        # parameters 'date', 'timeperiod' received from Diaglogflow are in ISO 8601 format
+        if timeperiod != '':
+            startTime = datetime.strptime(timeperiod['startTime'], '%Y-%m-%dT%H:%M:%S%z')
+            endTime   = datetime.strptime(timeperiod['endTime']  , '%Y-%m-%dT%H:%M:%S%z')
+        else:
+            # from specific date to the end of that day if no time period is specified
+            if date != '':
+                startTime = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S%z')
+            else:
+                startTime = datetime.now(pytz.timezone('Asia/Taipei'))
+            endTime = startTime.replace(hour=23, minute=59, second=59)
+
+        if weather in ['weather', 'temperature']:
+            reply = query_weather(location, startTime, endTime, weather)
 
     return reply
 
