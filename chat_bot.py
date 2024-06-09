@@ -3,8 +3,8 @@ from datetime import datetime
 import pytz
 import requests
 
-# 中央氣象局開放資料平臺 https://opendata.cwb.gov.tw
-# 資料擷取使用說明 https://opendata.cwb.gov.tw/opendatadoc/CWB_Opendata_API_V1.2.pdf
+# 中央氣象署開放資料平臺 https://opendata.cwa.gov.tw
+# 資料擷取使用說明 https://opendata.cwa.gov.tw/opendatadoc/CWB_Opendata_API_V1.2.pdf
 opendata_access_token  = { 'Authorization': os.environ.get('CWB_AUTHORIZATION_KEY') }
 
 import openai
@@ -56,7 +56,7 @@ def query_weather(location, startTime, endTime, mode):
     reply = None
     with requests.Session() as s:
         # 鄉鎮天氣預報-臺灣未來一週天氣預報
-        url = 'https://opendata.cwb.gov.tw/api/v1/rest/datastore/{0}'.format('F-D0047-091')
+        url = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/{0}'.format('F-D0047-091')
         params = { 'format': 'json', 'elementName': 'MinT,MaxT', 'locationName': '臺北市' }
         if location != '':
             params['locationName'] = location
@@ -81,7 +81,7 @@ def query_weather(location, startTime, endTime, mode):
                         reports[key] = { element['elementName']: data['elementValue'][0]['value']}
 
             if len(reports) > 0:
-                reply = '中央氣象局預測%s:' % params['locationName']
+                reply = '中央氣象署預測%s:' % params['locationName']
                 for time, elements in reports.items():
                     reply += '\n*%s以後%s' % (ptime2nl(time), weather_elements2nl(elements))
         except:
