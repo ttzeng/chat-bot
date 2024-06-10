@@ -7,8 +7,13 @@ import requests
 # 資料擷取使用說明 https://opendata.cwa.gov.tw/opendatadoc/CWB_Opendata_API_V1.2.pdf
 opendata_access_token  = { 'Authorization': os.environ.get('CWB_AUTHORIZATION_KEY') }
 
-import openai
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+from openai import OpenAI
+
+client = OpenAI(
+  # Defaults to os.environ.get("OPENAI_API_KEY")
+  # Otherwise use: api_key="Your_API_Key"
+  api_key=os.environ['OPENAI_API_KEY'],
+)
 
 def chat_bot(json):
     print(json)
@@ -20,10 +25,9 @@ def chat_bot(json):
     reply = None
     if action == 'input.unknown':
         # Relay the query text to chatGPT
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages= [ { "role":"user", "content": json['queryResult']['queryText'] } ],
-            max_tokens=128,
             temperature=0.5,
         )
         reply = response.choices[0].message.content
