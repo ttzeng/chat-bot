@@ -1,27 +1,49 @@
 import os
-from types import SimpleNamespace
+from dotenv import load_dotenv
+
+# Load environment variables from a '.env' file
+load_dotenv()
 
 from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
-s = SimpleNamespace()
-try:
-    # Load secrets from private module
-    import secrets as sf
-    s.LINE_CHANNEL_ACCESS_TOKEN = sf.LINE_CHANNEL_ACCESS_TOKEN
-    s.LINE_CHANNEL_SECRET = sf.LINE_CHANNEL_SECRET
-except ImportError:
-    # Load secrets from environment variables
-    s.LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN')
-    s.LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET')
+from linebot.v3 import (
+    WebhookHandler
+)
+from linebot.v3.exceptions import (
+    InvalidSignatureError
+)
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    ReplyMessageRequest,
+    TextMessage
+)
+from linebot.v3.webhooks import (
+    MessageEvent,
+    TextMessageContent
+)
+
+# Load secrets from environment variables
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN')
+LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET')
 
 app = Flask(__name__)
-line_bot_api = LineBotApi(s.LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(s.LINE_CHANNEL_SECRET)
 
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
+
+# The /echo endpoint is used to echo back users' chat messages on LINE platform
+@app.route('/echo', methods=['GET', 'POST'])
 def echo(request):
+    """Responds to any HTTP request.
+    Args:
+        request (flask.Request): HTTP request object.
+    Returns:
+        The response text or any set of values that can be turned into a
+        Response object using
+        `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
+    """
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
     # get request body as text
@@ -35,9 +57,21 @@ def echo(request):
         abort(400)
     return 'OK'
 
-@handler.add(MessageEvent, message=TextMessage)
+@handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
-    message = TextSendMessage(text=event.message.text)
-    line_bot_api.reply_message(
-        event.reply_token,
-        message)
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        line_bot_api.reply_message_with_http_info(
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=[TextMessage(text=event.message.text)]
+            )
+        )
+
+if __name__ == '__main__':
+    port = os.environ.get('SERVER_PORT')
+    if port == None:
+        port = 80
+    else:
+        port = int(port)
+    app.run(host='0.0.0.0', port=port)
