@@ -33,9 +33,9 @@ app = Flask(__name__)
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-# The /echo endpoint is used to echo back users' chat messages on LINE platform
-@app.route('/echo', methods=['GET', 'POST'])
-def echo(request):
+# The /callback endpoint is used to receive LINE message events through the webhook
+@app.route('/callback', methods=['POST'])
+def callback(request):
     """Responds to any HTTP request.
     Args:
         request (flask.Request): HTTP request object.
@@ -48,6 +48,7 @@ def echo(request):
     signature = request.headers['X-Line-Signature']
     # get request body as text
     body = request.get_data(as_text=True)
+    print(body)
 
     # handle webhook body
     try:
@@ -57,14 +58,17 @@ def echo(request):
         abort(400)
     return 'OK'
 
+from chat_openai import get_openai_response
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
+        response = get_openai_response(event.message.text)
         line_bot_api.reply_message_with_http_info(
             ReplyMessageRequest(
                 reply_token=event.reply_token,
-                messages=[TextMessage(text=event.message.text)]
+                messages=[TextMessage(text=response)]
             )
         )
 
