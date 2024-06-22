@@ -1,4 +1,5 @@
 # Function dependencies
 google-generativeai
 line-bot-sdk
+openai
 python-dotenv

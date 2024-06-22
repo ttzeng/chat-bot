@@ -58,13 +58,25 @@ def callback(request):
         abort(400)
     return 'OK'
 
+import requests
 from chat_gemini import get_gemini_response
+from chat_openai import get_openai_response
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        response = get_gemini_response(event.message.text)
+        # Consult Redis API endpoint on model setting
+        queries = { 'model': '' }
+        r = requests.get(os.environ.get('API_REDIS'), params=queries)
+        model = r.json().get('model')
+        if model == 'gemini':
+            response = get_gemini_response(event.message.text)
+        elif model == 'openai':
+            response = get_openai_response(event.message.text)
+        else:
+            response = event.message.text
+
         # Generate text response from the message inputs
         line_bot_api.reply_message_with_http_info(
             ReplyMessageRequest(
