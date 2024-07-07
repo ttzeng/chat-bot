@@ -1,5 +1,23 @@
-# Function dependencies
+# Cloud Storage client library
+# https://cloud.google.com/python/docs/reference/storage/latest
+google-cloud-storage
+
+# Google Generative Language API client library
+# https://googleapis.dev/python/generativelanguage/latest
+google-ai-generativelanguage
+
+# Google AI Python SDK for the Gemini API
+# https://github.com/google-gemini/generative-ai-python
 google-generativeai
+
+# LINE Message API SDK for Python
+# https://github.com/line/line-bot-sdk-python
 line-bot-sdk
+
+# OpenAI Python API library
+# https://github.com/openai/openai-python
 openai
+
+# python-dotenv
+# https://github.com/theskumar/python-dotenv
 python-dotenv

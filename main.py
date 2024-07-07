@@ -16,11 +16,13 @@ from linebot.v3.messaging import (
     Configuration,
     ApiClient,
     MessagingApi,
+    MessagingApiBlob,
     ReplyMessageRequest,
     TextMessage
 )
 from linebot.v3.webhooks import (
     MessageEvent,
+    ImageMessageContent,
     TextMessageContent
 )
 
@@ -61,19 +63,34 @@ def callback(request):
 import requests
 from chat_gemini import get_gemini_response
 from chat_openai import get_openai_response
+from object_storage import (
+    cloud_storage_upload_object,
+    cloud_storage_download_object,
+)
+
+bucket_name = 'bucket-line-bot-storage'
+
+def object_name(id: str) -> str:
+    return '{}.jpg'.format(id)
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
+
+        # Download the quoted image if this message quotes a past message
+        quoted_message_id = event.message.quoted_message_id
+        image = (cloud_storage_download_object(bucket_name, object_name(quoted_message_id))
+                 if quoted_message_id is not None else None)
+
         # Consult Redis API endpoint on model setting
         queries = { 'model': '' }
         r = requests.get(os.environ.get('API_REDIS'), params=queries)
         model = r.json().get('model')
         if model == 'gemini':
-            response = get_gemini_response(event.message.text)
+            response = get_gemini_response(event.message.text, image)
         elif model == 'openai':
-            response = get_openai_response(event.message.text)
+            response = get_openai_response(event.message.text, image)
         else:
             response = event.message.text
 
@@ -84,6 +101,15 @@ def handle_text_message(event):
                 messages=[TextMessage(text=response)]
             )
         )
+
+@handler.add(MessageEvent, message=ImageMessageContent)
+def handle_image_message(event):
+    with ApiClient(configuration) as api_client:
+        api_blob = MessagingApiBlob(api_client)
+        message_id = event.message.id
+        cloud_storage_upload_object(bucket_name, object_name(message_id),
+                                    api_blob.get_message_content(message_id),
+                                    'image/jpeg')
 
 if __name__ == '__main__':
     port = os.environ.get('SERVER_PORT')
