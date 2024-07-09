@@ -63,6 +63,7 @@ def callback(request):
 import requests
 from chat_gemini import get_gemini_response
 from chat_openai import get_openai_response
+from chat_claude import get_claude_response
 from object_storage import (
     cloud_storage_upload_object,
     cloud_storage_download_object,
@@ -91,6 +92,8 @@ def handle_text_message(event):
             response = get_gemini_response(event.message.text, image)
         elif model == 'openai':
             response = get_openai_response(event.message.text, image)
+        elif model == 'claude':
+            response = get_claude_response(event.message.text, image)
         else:
             response = event.message.text
 

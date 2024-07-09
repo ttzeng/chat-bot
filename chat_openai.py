@@ -1,9 +1,6 @@
 import os
 import base64
 
-# Import Generative Language API library
-import google.ai.generativelanguage as glm
-
 from openai import OpenAI
 
 client = OpenAI(
@@ -15,7 +12,6 @@ client = OpenAI(
 def get_openai_response (prompt: str, image: bytes = None,
                          model = 'gpt-4o', temperature = 0.8):
     if image is not None:
-        blob = glm.Blob(mime_type='image/jpeg', data=image)
         # Make images available to the model by passing the image URL
         # or by passing the base64 encoded image
         base64_image = base64.b64encode(image).decode('utf-8')

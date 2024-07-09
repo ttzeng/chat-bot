@@ -1,3 +1,7 @@
+# Anthropic Python API library
+# https://github.com/anthropics/anthropic-sdk-python
+anthropic
+
 # Cloud Storage client library
 # https://cloud.google.com/python/docs/reference/storage/latest
 google-cloud-storage
