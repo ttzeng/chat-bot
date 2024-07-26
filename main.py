@@ -1,3 +1,4 @@
+import json
 import os
 from dotenv import load_dotenv
 
@@ -61,9 +62,9 @@ def callback(request):
     return 'OK'
 
 import requests
-from chat_gemini import get_gemini_response
-from chat_openai import get_openai_response
-from chat_claude import get_claude_response
+import chat_gemini
+import chat_openai
+import chat_claude
 from object_storage import (
     cloud_storage_upload_object,
     cloud_storage_download_object,
@@ -84,17 +85,25 @@ def handle_text_message(event):
         image = (cloud_storage_download_object(bucket_name, object_name(quoted_message_id))
                  if quoted_message_id is not None else None)
 
-        # Consult Redis API endpoint on model setting
+        # Consult Redis API endpoint on model configuration
         queries = { 'model': '' }
         r = requests.get(os.environ.get('API_REDIS'), params=queries)
-        model = r.json().get('model')
-        if model == 'gemini':
-            response = get_gemini_response(event.message.text, image)
-        elif model == 'openai':
-            response = get_openai_response(event.message.text, image)
-        elif model == 'claude':
-            response = get_claude_response(event.message.text, image)
-        else:
+        conf = json.loads(r.json().get('model'))
+
+        provider = conf.get('provider')
+        try:
+            modules = {
+                'gemini': chat_gemini,
+                'openai': chat_openai,
+                'claude': chat_claude,
+            }
+            chat_bot = modules.get(provider)
+            get_response = getattr(chat_bot, 'get_response')
+            response = get_response(model=conf.get('model'),
+                                    prompt=event.message.text,
+                                    image=image)
+        except AttributeError:
+            print(f'Error: invalid provider \'{provider}\'')
             response = event.message.text
 
         # Generate text response from the message inputs
