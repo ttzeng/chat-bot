@@ -61,6 +61,7 @@ def callback(request):
         abort(400)
     return 'OK'
 
+import re
 import requests
 import chat_gemini
 import chat_openai
@@ -85,23 +86,36 @@ def handle_text_message(event):
         image = (cloud_storage_download_object(bucket_name, object_name(quoted_message_id))
                  if quoted_message_id is not None else None)
 
-        # Consult Redis API endpoint on model configuration
-        queries = { 'model': '' }
-        r = requests.get(os.environ.get('API_REDIS'), params=queries)
-        conf = json.loads(r.json().get('model'))
+        # Look for a word following a '@' and name the group as 'attn',
+        # put the remaining string in the group 'msg'
+        m = re.search(r'(?P<attn>(?<=^@)\w+)(\s*)(?P<msg>.*)', event.message.text)
+        provider = m.group('attn') if m else None
+        prompt   = m.group('msg')  if provider else event.message.text
 
-        provider = conf.get('provider')
-        try:
-            modules = {
-                'gemini': chat_gemini,
-                'openai': chat_openai,
-                'claude': chat_claude,
-            }
+        # Select the chat module according to the name of attention if provided and valid,
+        # otherwise, consult Redis API endpoint on model configuration
+        modules = {
+            'gemini': chat_gemini,
+            'openai': chat_openai,
+            'claude': chat_claude,
+        }
+        model = None
+        chat_bot = modules.get(provider) if provider else None
+        if chat_bot is None:
+            queries = { 'model': '' }
+            r = requests.get(os.environ.get('API_REDIS'), params=queries)
+            conf = json.loads(r.json().get('model'))
+            provider = conf.get('provider')
+            model    = conf.get('model')
             chat_bot = modules.get(provider)
+
+        try:
             get_response = getattr(chat_bot, 'get_response')
-            response = get_response(model=conf.get('model'),
-                                    prompt=event.message.text,
-                                    image=image)
+            if model is None:
+                # Use the default model of the chat module
+                response = get_response(prompt=prompt, image=image)
+            else:
+                response = get_response(model=model, prompt=prompt, image=image)
         except AttributeError:
             print(f'Error: invalid provider \'{provider}\'')
             response = event.message.text
