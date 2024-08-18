@@ -16,6 +16,7 @@ from linebot.v3.messaging import (
     Configuration,
     ApiClient,
     MessagingApi,
+    PushMessageRequest,
     ReplyMessageRequest,
     TextMessage
 )
@@ -70,10 +71,45 @@ def handle_message(event):
             )
         )
 
+import threading
+
+from openai import OpenAI
+
+client = OpenAI(
+    # Defaults to os.environ.get("OPENAI_API_KEY")
+    # Otherwise use: api_key="Your_API_Key"
+    api_key=os.environ['OPENAI_API_KEY'],
+)
+
+def async_get_response(user_id, prompt):
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{ "role": "user", "content": prompt, }],
+    )
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        line_bot_api.push_message(
+            PushMessageRequest(
+                to=user_id,
+                messages=[TextMessage(text=response.choices[0].message.content)]
+            )
+        )
+
 # The /chat endpoint is called by the fulfillment of my intents on Dialogflow
 @app.route('/chat', methods=['POST'])
 def chat(request):
-    return jsonify({ 'fulfillmentText': chat_bot(request.get_json()) })
+    json = request.get_json()
+    query_result = json['queryResult']
+    action = query_result.get('action')
+    if action == 'input.unknown':
+        # Relay the query text to chatGPT and asynchronous push back the response
+        user_id = json['originalDetectIntentRequest']['payload']['data']['source']['userId']
+        prompt  = query_result['queryText']
+        CT = threading.Thread(target=async_get_response, args=(user_id, prompt,))
+        CT.start()
+        return jsonify({ 'fulfillmentText': '...' })
+
+    return jsonify({ 'fulfillmentText': chat_bot(json) })
 
 if __name__ == '__main__':
     port = os.environ.get('SERVER_PORT')

@@ -7,31 +7,12 @@ import requests
 # 資料擷取使用說明 https://opendata.cwa.gov.tw/opendatadoc/CWB_Opendata_API_V1.2.pdf
 opendata_access_token  = { 'Authorization': os.environ.get('CWB_AUTHORIZATION_KEY') }
 
-from openai import OpenAI
-
-client = OpenAI(
-  # Defaults to os.environ.get("OPENAI_API_KEY")
-  # Otherwise use: api_key="Your_API_Key"
-  api_key=os.environ['OPENAI_API_KEY'],
-)
-
 def chat_bot(json):
     print(json)
-    if 'action' in json['queryResult']:
-        action = json['queryResult']['action']
-    else:
-        action = None
+    action = json['queryResult'].get('action')
 
     reply = None
-    if action == 'input.unknown':
-        # Relay the query text to chatGPT
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages= [ { "role":"user", "content": json['queryResult']['queryText'] } ],
-            temperature=0.5,
-        )
-        reply = response.choices[0].message.content
-    elif action == 'query.weather':
+    if action == 'query.weather':
         # parameters from Dialogflow
         params = json['queryResult']['parameters']
         weather    = params['getWeather']
