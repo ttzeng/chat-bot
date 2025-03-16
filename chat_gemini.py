@@ -10,7 +10,7 @@ import google.generativeai as genai
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
 
 def get_response (prompt: str, image: bytes = None,
-                  model: str = 'gemini-1.5-flash'):
+                  model: str = 'gemini-2.0-flash-lite'):
     # Select the model
     model = genai.GenerativeModel(model)
 
