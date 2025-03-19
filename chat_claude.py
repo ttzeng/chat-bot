@@ -10,7 +10,7 @@ client = anthropic.Anthropic(
 
 def get_response (prompt: str, image: bytes = None,
                   model: str = 'claude-3-5-sonnet-20240620',
-                  max_tokens = 1024, temperature = 0.8):
+                  **parameters):
     contents = []
     if image is not None:
         # Claude supports base64 source type for images with 'image/jpeg',
@@ -27,9 +27,8 @@ def get_response (prompt: str, image: bytes = None,
         })
     contents.append({ 'type': 'text', 'text': prompt })
     response = client.messages.create(model = model,
-                                      max_tokens = max_tokens,
-                                      temperature = temperature,
                                       messages = [
                                           { 'role': 'user', 'content': contents }
-                                      ])
+                                      ],
+                                      **parameters)
     return response.content[0].text

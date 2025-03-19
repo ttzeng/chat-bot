@@ -13,7 +13,7 @@ client = OpenAI(
 )
 
 def get_response (prompt: str, image: bytes = None,
-                  model: str = 'gpt-4o', temperature = 0.8):
+                  model: str = 'gpt-4o', **parameters):
     if image is not None:
         # Make images available to the model by passing the image URL
         # or by passing the base64 encoded image
@@ -26,6 +26,6 @@ def get_response (prompt: str, image: bytes = None,
     response = client.chat.completions.create(
             model = model,
             messages = [ { "role":"user", "content": prompt } ],
-            temperature = temperature,
+            **parameters,
         )
     return response.choices[0].message.content

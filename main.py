@@ -100,6 +100,7 @@ def handle_text_message(event):
             'claude': chat_claude,
         }
         model = None
+        params = { 'max_tokens': 1024 } if provider == 'claude' else {}
         chat_bot = modules.get(provider) if provider else None
         if chat_bot is None:
             queries = { 'model': '' }
@@ -107,15 +108,17 @@ def handle_text_message(event):
             conf = json.loads(r.json().get('model'))
             provider = conf.get('provider')
             model    = conf.get('model')
+            params   = conf.get('parameters')
             chat_bot = modules.get(provider)
 
         try:
+            filtered_params = { k: v for k, v in params.items() if v is not None } if params is not None else {}
             get_response = getattr(chat_bot, 'get_response')
             if model is None:
                 # Use the default model of the chat module
-                response = get_response(prompt=prompt, image=image)
+                response = get_response(prompt=prompt, image=image, **filtered_params)
             else:
-                response = get_response(model=model, prompt=prompt, image=image)
+                response = get_response(model=model, prompt=prompt, image=image, **filtered_params)
         except AttributeError:
             print(f'Error: invalid provider \'{provider}\'')
             response = event.message.text
