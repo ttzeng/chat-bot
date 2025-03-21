@@ -13,19 +13,22 @@ client = OpenAI(
 )
 
 def get_response (prompt: str, image: bytes = None,
-                  model: str = 'gpt-4o', **parameters):
+                  model: str = 'gpt-4o-mini', **parameters):
     if image is not None:
         # Make images available to the model by passing the image URL
         # or by passing the base64 encoded image
         base64_image = base64.b64encode(image).decode('utf-8')
-        prompt = [ { 'type': 'text', 'text': prompt },
-                   { 'type': 'image_url',
-                     'image_url': { 'url': f'data:image/jpeg;base64,{base64_image}' }
-                   }
-                 ]
-    response = client.chat.completions.create(
+        input = [{ 'role': 'user',
+                   'content': [{ 'type': 'input_text', 'text': prompt },
+                               { 'type': 'input_image',
+                                 'image_url': f'data:image/jpeg;base64,{base64_image}' },
+                              ]
+                 }]
+    else:
+        input = prompt
+    response = client.responses.create(
             model = model,
-            messages = [ { "role":"user", "content": prompt } ],
+            input = input,
             **parameters,
         )
-    return response.choices[0].message.content
+    return response.output_text
