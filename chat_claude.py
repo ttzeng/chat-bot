@@ -9,7 +9,7 @@ client = anthropic.Anthropic(
 )
 
 def get_response (prompt: str, image: bytes = None,
-                  model: str = 'claude-3-5-sonnet-20240620',
+                  model: str = 'claude-sonnet-4-5-20250929',
                   **parameters):
     contents = []
     if image is not None:
